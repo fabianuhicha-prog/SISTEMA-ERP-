@@ -1,0 +1,1 @@
+Esta versión corrige la navegación móvil mediante pantallas HTML independientes.
