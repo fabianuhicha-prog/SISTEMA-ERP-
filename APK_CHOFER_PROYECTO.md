@@ -29,13 +29,23 @@ Aplicación Android y web para controlar ingresos, gastos, carreras, GPS y renta
 ## Navegación Android
 Se usa navegación superior con páginas independientes para evitar conflictos con la zona de gestos inferior de Android.
 
-## Error de actualización corregido
-Las APK v1-v4 se construyeron en runners distintos de GitHub Actions y cada runner generó una clave debug distinta. Android no permite actualizar una app si el mismo applicationId está firmado con otra clave y muestra: **"No se instaló la app debido a un conflicto con un paquete"**.
+## Versiones y errores corregidos
+### v1-v4
+Las APK se construyeron en runners distintos de GitHub Actions y cada runner generó una clave debug diferente. Android bloqueaba las actualizaciones con el mensaje: **"No se instaló la app debido a un conflicto con un paquete"**.
 
-Desde **v5** el proyecto usa una clave de pruebas estable dentro de la rama `APK-CHOFER`. Por ello:
-1. Para pasar desde v1-v4 a v5 hay que desinstalar una sola vez la versión anterior.
-2. Instalar v5 como nueva base.
-3. Desde v5 en adelante las futuras APK deben conservar el mismo `applicationId` y la misma firma de pruebas, y solo aumentar `versionCode`.
+### v5 - base actualizable
+Desde v5 se usa una firma estable dentro de la rama `APK-CHOFER`. Para pasar desde v1-v4 a v5 fue necesario desinstalar una sola vez. Desde v5 en adelante se mantiene el mismo `applicationId`, la misma firma y se aumenta `versionCode`.
+
+### v6 - GPS y vehículo dinámico
+- La app solicita permiso de ubicación una sola vez al primer ingreso.
+- En Carrera se comprueba el permiso existente sin volver a mostrar la solicitud del sistema si ya está concedido.
+- Si el GPS está autorizado, la ubicación se inicia automáticamente al entrar a Carrera.
+- El botón de autorización solo aparece si el permiso falta o fue retirado.
+- El seguimiento en segundo plano solicita permisos solo la primera vez que se inicia una carrera.
+- Tipo, color, modelo y placa se muestran en el encabezado.
+- Ajustes tiene vista previa del vehículo.
+- El color guardado se aplica al vehículo mostrado en el mapa mediante un marcador SVG dinámico.
+- Modelo, color y placa se reflejan en Carrera después de guardar la configuración.
 
 ## Identificador Android
 `com.controlchofer.app`
@@ -44,11 +54,13 @@ Desde **v5** el proyecto usa una clave de pruebas estable dentro de la rama `APK
 `APK-CHOFER`
 
 ## Regla para futuras versiones
-- No cambiar applicationId.
+- No cambiar `applicationId`.
 - No cambiar la firma usada desde v5.
-- Aumentar versionCode en cada compilación.
+- Aumentar `versionCode` en cada compilación.
 - Mantener la interfaz Android visualmente alineada con la versión web.
 - Conservar GPS, cálculo de combustible, usuarios, vehículo, historial y reportes ya correctos.
+- No volver a solicitar permisos Android si `checkPermissions()` indica que ya están concedidos.
+- El color/modelo/placa del vehículo deben actualizar el encabezado, Ajustes y el marcador del mapa.
 
 ## Nota de firma
 La firma estable actual es de pruebas para facilitar actualizaciones durante el desarrollo. Antes de publicación en Google Play debe sustituirse por una clave release privada y conservarse permanentemente.
