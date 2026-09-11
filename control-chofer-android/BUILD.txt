@@ -1,0 +1,2 @@
+Control del Chofer Android
+Compilación automática de APK con Capacitor, geolocalización y seguimiento en segundo plano.
