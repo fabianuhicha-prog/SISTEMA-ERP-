@@ -21,8 +21,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Usar login v3 como pantalla inicial
-        run: cp www/login-v3.html www/index.html
+      - name: Preparar navegación Android v4
+        run: |
+          cp www/login-v3.html www/index.html
+          python - <<'PY'
+          from pathlib import Path
+          for name in ['carrera.html','movimientos.html','analisis.html','ajustes.html']:
+              p=Path('www')/name
+              s=p.read_text()
+              s=s.replace('<i>▣</i>Movimientos','<i>▣</i>Ingresos/Gastos')
+              if 'reportes.html' not in s:
+                  normal='<a href="ajustes.html"><i>⚙</i>Ajustes</a>'
+                  active='<a class="active" href="ajustes.html"><i>⚙</i>Ajustes</a>'
+                  if active in s:
+                      s=s.replace(active,'<a href="reportes.html"><i>▤</i>Reportes</a>'+active)
+                  elif normal in s:
+                      s=s.replace(normal,'<a href="reportes.html"><i>▤</i>Reportes</a>'+normal)
+              p.write_text(s)
+          PY
 
       - uses: actions/setup-node@v4
         with:
@@ -56,8 +72,8 @@ jobs:
           p.write_text(s)
           g=Path('android/app/build.gradle')
           t=g.read_text()
-          t=t.replace('versionCode 1','versionCode 3')
-          t=t.replace('versionName "1.0"','versionName "1.2"')
+          t=t.replace('versionCode 1','versionCode 4')
+          t=t.replace('versionName "1.0"','versionName "1.3"')
           g.write_text(t)
           PY
 
@@ -68,10 +84,10 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Control-del-Chofer-Android-v3.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Control-del-Chofer-Android-v4.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Control-del-Chofer-Android-APK-v3
-          path: control-chofer-android/Control-del-Chofer-Android-v3.apk
+          name: Control-del-Chofer-Android-APK-v4
+          path: control-chofer-android/Control-del-Chofer-Android-v4.apk
           if-no-files-found: error
