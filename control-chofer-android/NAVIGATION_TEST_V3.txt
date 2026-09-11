@@ -1,0 +1,1 @@
+Pantallas: inicio.html, carrera.html, movimientos.html, analisis.html, ajustes.html.
