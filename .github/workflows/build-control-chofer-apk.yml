@@ -16,22 +16,61 @@ jobs:
         working-directory: control-chofer-android
     steps:
       - uses: actions/checkout@v4
+
+      - name: Patch navegación y diseño móvil
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('www/index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old="document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>screen(b.dataset.s));function screen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));$(id).classList.add('on');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.s===id));setTimeout(()=>{if(id==='carrera')map.invalidateSize();if(id==='inicio')dmap.invalidateSize()},100)}"
+          new="function openScreen(id){const target=$(id);if(!target)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));target.classList.add('on');document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.s===id));window.scrollTo(0,0);setTimeout(()=>{try{if(id==='carrera'&&map)map.invalidateSize(true)}catch(e){}try{if(id==='inicio'&&dmap)dmap.invalidateSize(true)}catch(e){}},180)}"
+          if old not in s:
+              raise SystemExit('No se encontró bloque de navegación esperado')
+          s=s.replace(old,new)
+
+          oldnav='<nav class="nav"><button class="on" data-s="inicio"><i>⌂</i>Inicio</button><button data-s="carrera"><i>▶</i>Carrera</button><button data-s="mov"><i>▣</i>Movimientos</button><button data-s="analisis"><i>▥</i>Análisis</button><button data-s="ajustes"><i>⚙</i>Ajustes</button></nav>'
+          newnav='<nav class="nav" aria-label="Navegación principal"><button type="button" class="on" data-s="inicio" onclick="openScreen(\'inicio\')"><i>⌂</i>Inicio</button><button type="button" data-s="carrera" onclick="openScreen(\'carrera\')"><i>▶</i>Carrera</button><button type="button" data-s="mov" onclick="openScreen(\'mov\')"><i>▣</i>Movimientos</button><button type="button" data-s="analisis" onclick="openScreen(\'analisis\')"><i>▥</i>Análisis</button><button type="button" data-s="ajustes" onclick="openScreen(\'ajustes\')"><i>⚙</i>Ajustes</button></nav>'
+          if oldnav not in s:
+              raise SystemExit('No se encontró menú inferior esperado')
+          s=s.replace(oldnav,newnav)
+
+          s=s.replace('header{position:sticky;top:0;z-index:900;background:var(--n);color:#fff;padding:11px 13px;display:flex;justify-content:space-between;align-items:center}',
+                      'header{position:sticky;top:0;z-index:4000;background:var(--n);color:#fff;padding:30px 13px 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}header>div:first-child{min-width:0;flex:1}header>div:last-child{display:flex;align-items:center;gap:6px;flex:0 0 auto;max-width:105px}header>div:last-child b{max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}header>div:first-child b,header>div:first-child small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}')
+          s=s.replace('.nav{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#fff;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #dbe3ec}',
+                      '.nav{position:fixed;bottom:0;left:0;right:0;z-index:5000;background:#fff;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #dbe3ec;box-shadow:0 -4px 18px #0002;padding-bottom:8px;pointer-events:auto}')
+          s=s.replace('.nav button{border:0;background:#fff;padding:9px 2px;color:#52657b;font-size:10px}',
+                      '.nav button{border:0;background:#fff;min-height:66px;padding:9px 2px 7px;color:#52657b;font-size:10px;touch-action:manipulation;-webkit-tap-highlight-color:#1976d222;position:relative;z-index:5001;cursor:pointer;user-select:none}')
+          s=s.replace('.nav button.on{color:#1260a8;font-weight:700}', '.nav button.on{color:#1260a8;font-weight:800;background:#f1f7fd}.nav button:active{background:#e5f0fb}')
+          s=s.replace('main{padding:12px 12px 82px;max-width:980px;margin:auto}', 'main{padding:12px 12px 102px;max-width:980px;margin:auto}')
+          s=s.replace("$('uname').textContent=u().name;", "$('uname').textContent=u().name.split(' ')[0];")
+
+          p.write_text(s,encoding='utf-8')
+          print('Navegación corregida y diseño móvil actualizado')
+          PY
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: control-chofer-android/package.json
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
+
       - name: Install dependencies
         run: npm install
+
       - name: Create Android project
         run: npx cap add android
+
       - name: Sync Capacitor plugins
         run: npx cap sync android
-      - name: Add Android location permissions
+
+      - name: Add Android location permissions and version
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -41,16 +80,25 @@ jobs:
           if 'ACCESS_BACKGROUND_LOCATION' not in s:
               s=s.replace('<application',perms+'\n    <application',1)
           p.write_text(s)
+
+          g=Path('android/app/build.gradle')
+          t=g.read_text()
+          t=t.replace('versionCode 1','versionCode 2')
+          t=t.replace('versionName "1.0"','versionName "1.1"')
+          g.write_text(t)
           PY
+
       - name: Build installable debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Control-del-Chofer-Android.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Control-del-Chofer-Android-v2.apk
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Control-del-Chofer-Android-APK
-          path: control-chofer-android/Control-del-Chofer-Android.apk
+          name: Control-del-Chofer-Android-APK-v2
+          path: control-chofer-android/Control-del-Chofer-Android-v2.apk
           if-no-files-found: error
