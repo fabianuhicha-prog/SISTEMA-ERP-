@@ -1,0 +1,1 @@
+Se cambia la navegación porque en algunos Android WebView los botones SPA no cambiaban de sección.
