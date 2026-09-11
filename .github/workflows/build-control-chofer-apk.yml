@@ -64,12 +64,11 @@ jobs:
 
       - name: Configurar firma estable de pruebas APK CHOFER
         run: |
-          mkdir -p "$HOME/.android"
-          base64 -d signing/apk-chofer-debug.keystore.b64 > "$HOME/.android/debug.keystore"
-          chmod 600 "$HOME/.android/debug.keystore"
-          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey >/dev/null
+          base64 -d signing/apk-chofer-debug.keystore.b64 > android/app/apk-chofer-debug.keystore
+          chmod 600 android/app/apk-chofer-debug.keystore
+          keytool -list -v -keystore android/app/apk-chofer-debug.keystore -storepass android -alias androiddebugkey | grep -E 'Owner:|SHA256:'
 
-      - name: Add Android location permissions and version
+      - name: Add Android permissions, stable signing and version
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -79,8 +78,12 @@ jobs:
           if 'ACCESS_BACKGROUND_LOCATION' not in s:
               s=s.replace('<application',perms+'\n    <application',1)
           p.write_text(s)
+
           g=Path('android/app/build.gradle')
           t=g.read_text()
+          if 'apk-chofer-debug.keystore' not in t:
+              block='''android {\n    signingConfigs {\n        debug {\n            storeFile file('apk-chofer-debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }'''
+              t=t.replace('android {',block,1)
           t=t.replace('versionCode 1','versionCode 5')
           t=t.replace('versionName "1.0"','versionName "1.4"')
           g.write_text(t)
@@ -92,8 +95,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk APK-CHOFER-v5.apk
+      - name: Verify APK certificate and rename
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk APK-CHOFER-v5.apk
+          rm -rf /tmp/apkcert && mkdir -p /tmp/apkcert
+          unzip -qq APK-CHOFER-v5.apk 'META-INF/*' -d /tmp/apkcert
+          CERT=$(find /tmp/apkcert -type f \( -name '*.RSA' -o -name '*.DSA' -o -name '*.EC' \) | head -n1)
+          keytool -printcert -file "$CERT" | grep -E 'Owner:|SHA256:'
+          keytool -printcert -file "$CERT" | grep 'CN=APK CHOFER'
 
       - uses: actions/upload-artifact@v4
         with:
