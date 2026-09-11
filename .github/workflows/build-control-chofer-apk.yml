@@ -84,8 +84,8 @@ jobs:
           if 'apk-chofer-debug.keystore' not in t:
               block='''android {\n    signingConfigs {\n        debug {\n            storeFile file('apk-chofer-debug.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }'''
               t=t.replace('android {',block,1)
-          t=t.replace('versionCode 1','versionCode 5')
-          t=t.replace('versionName "1.0"','versionName "1.4"')
+          t=t.replace('versionCode 1','versionCode 6')
+          t=t.replace('versionName "1.0"','versionName "1.5"')
           g.write_text(t)
           PY
 
@@ -97,15 +97,15 @@ jobs:
 
       - name: Verify APK certificate and rename
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk APK-CHOFER-v5.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk APK-CHOFER-v6.apk
           rm -rf /tmp/apkcert && mkdir -p /tmp/apkcert
-          unzip -qq APK-CHOFER-v5.apk 'META-INF/*' -d /tmp/apkcert
+          unzip -qq APK-CHOFER-v6.apk 'META-INF/*' -d /tmp/apkcert
           CERT=$(find /tmp/apkcert -type f \( -name '*.RSA' -o -name '*.DSA' -o -name '*.EC' \) | head -n1)
           keytool -printcert -file "$CERT" | grep -E 'Owner:|SHA256:'
           keytool -printcert -file "$CERT" | grep 'CN=APK CHOFER'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: APK-CHOFER-v5-FIRMA-ESTABLE
-          path: control-chofer-android/APK-CHOFER-v5.apk
+          name: APK-CHOFER-v6-GPS-VEHICULO
+          path: control-chofer-android/APK-CHOFER-v6.apk
           if-no-files-found: error
