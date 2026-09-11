@@ -1,0 +1,1 @@
+No usar navegación SPA anterior. La versión v3 usa páginas HTML independientes.
