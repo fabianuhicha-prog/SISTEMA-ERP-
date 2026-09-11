@@ -1,0 +1,1 @@
+La compilación v3 debe copiar login-v3.html sobre index.html antes de generar Android.
