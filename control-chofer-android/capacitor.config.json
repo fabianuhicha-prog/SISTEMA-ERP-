@@ -1,0 +1,12 @@
+{
+  "appId": "com.controlchofer.app",
+  "appName": "Control del Chofer",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
